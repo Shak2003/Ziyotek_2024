@@ -9,6 +9,18 @@ terraform {
   }
 }
 
+# AWS VPC Configuration
+resource "aws_vpc" "my_vpc" {
+  cidr_block = "10.0.0.0/16"
+  enable_dns_support = true
+  enable_dns_hostnames = true
+
+  tags = {
+    Name        = "MyVPC"
+    Environment = "Production"
+  }
+}
+
 # AWS Route 53 Configuration
 resource "aws_route53_zone" "GoGreen_com" {
   name = "GoGreen.com"
@@ -22,18 +34,6 @@ resource "aws_route53_record" "www" {
   records = ["10.0.0.158"]
 }
 
-# AWS VPC Configuration
-resource "aws_vpc" "my_vpc" {
-  cidr_block = "10.0.0.0/16"  
-  enable_dns_support = true
-  enable_dns_hostnames = true
-
-  tags = {
-    Name = "MyVPC"
-    Environment = "Production"
-  }
-}
-
 # AWS Subnet Configuration
 resource "aws_subnet" "subnet1" {
   vpc_id                  = aws_vpc.my_vpc.id
@@ -41,50 +41,17 @@ resource "aws_subnet" "subnet1" {
   availability_zone       = "us-west-1b"
 
   tags = {
-    Name = "Subnet1"
-    Environment = "Production"
-  }
-}
-
-resource "aws_subnet" "subnet2" {
-  vpc_id                  = aws_vpc.my_vpc.id
-  cidr_block              = "10.0.2.0/24" 
-  availability_zone       = "us-west-1b"
-
-  tags = {
-    Name = "Subnet2"
-    Environment = "Production"
-  }
-}
-
-resource "aws_subnet" "subnet3" {
-  vpc_id                  = aws_vpc.my_vpc.id
-  cidr_block              = "10.0.3.0/24"  
-  availability_zone       = "us-west-1c"
-
-  tags = {
-    Name = "Subnet3"
-    Environment = "Production"
-  }
-}
-
-resource "aws_subnet" "subnet4" {
-  vpc_id                  = aws_vpc.my_vpc.id
-  cidr_block              = "10.0.4.0/24"  
-  availability_zone       = "us-west-1b"
-
-  tags = {
-    Name = "Subnet4"
+    Name        = "Subnet1"
     Environment = "Production"
   }
 }
 
 # AWS Internet Gateway
-resource "aws_internet_gateway" "my_igw" {
+resource "aws_internet_gateway" "Production" {
   vpc_id = aws_vpc.my_vpc.id
 
   tags = {
-    Name = "MyIGW"
+    Name        = "MyIGW"
     Environment = "Production"
   }
 }
@@ -94,7 +61,7 @@ resource "aws_route_table" "my_route_table" {
   vpc_id = aws_vpc.my_vpc.id
 
   tags = {
-    Name = "MyRouteTable"
+    Name        = "MyRouteTable"
     Environment = "Production"
   }
 }
@@ -111,15 +78,43 @@ resource "aws_security_group" "my_security_group" {
   description = "My Security Group Description"
   vpc_id      = aws_vpc.my_vpc.id
 
-  # Define ingress and egress rules as needed
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "MySecurityGroup"
+    Environment = "Production"
+  }
+}
+
+# Output the public IP address of the Route 53 record
+output "www_record_ip" {
+  value = aws_route53_record.www.records[0]
+}
+
+
+# Associate the default route table with the first subnet
+resource "aws_route_table_association" "subnet1_association" {
+  subnet_id      = aws_subnet.subnet1.id
+  route_table_id = aws_route_table.my_route_table.id
+}
+
+# Security Group
+resource "aws_security_group" "my_security_group" {
+  name        = "my-security-group"
+  description = "My Security Group Description"
+  vpc_id      = aws_vpc.my_vpc.id
+
   ingress {
     from_port = 80
     to_port   = 80
     protocol  = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-
-  # ... (Add other rules as needed)
 
   tags = {
     Name = "MySecurityGroup"
@@ -131,3 +126,4 @@ resource "aws_security_group" "my_security_group" {
 output "www_record_ip" {
   value = aws_route53_record.www.records[0]
 }
+
