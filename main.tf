@@ -88,7 +88,7 @@ resource "aws_route_table_association" "subnet1_association" {
 resource "aws_security_group" "my_security_group" {
   # Create a security group allowing incoming traffic on port 80 (HTTP) from any IP address
   name        = "my-security-group"
-  description = "My Security Group Description"
+  description = "HTTP Traffic for Web Server"
   vpc_id      = aws_vpc.my_vpc.id
 
   ingress {
@@ -107,5 +107,5 @@ resource "aws_security_group" "my_security_group" {
 
 # Output the public IP address of the Route 53 record
 output "www_record_ip" {
-  value = aws_route53_record.www.records[0]
+  value = tolist(aws_route53_record.www.records)[0]
 }
